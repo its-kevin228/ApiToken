@@ -5,6 +5,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
 import os  # Pour accéder aux variables d'environnement
+import mysql.connector;
 
 # Configuration de l'application FastAPI
 app = FastAPI()
