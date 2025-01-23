@@ -42,11 +42,11 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     return encoded_jwt
 
 # Endpoint pour générer un token
+hashed_password = pwd_context.hash("testpassword")
+
 @app.post("/token", response_model=Token)
 async def login_for_access_token(user: User):
-    # Ici, vous devriez vérifier les informations de l'utilisateur dans une base de données
-    # Pour cet exemple, nous allons simplement vérifier un utilisateur fictif
-    if user.username != "testuser" or not verify_password(user.password, pwd_context.hash("testpassword")):
+    if user.username != "testuser" or not verify_password(user.password, hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -58,7 +58,14 @@ async def login_for_access_token(user: User):
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
+
 # Endpoint pour valider le token
+
+@app.get("/")
+def root():
+    return {"message": "Bienvenue sur l'API Token"}
+
+
 @app.get("/validate_token")
 async def validate_token(token: str = Depends(OAuth2PasswordBearer(tokenUrl="token"))):
     credentials_exception = HTTPException(
