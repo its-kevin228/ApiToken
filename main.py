@@ -13,9 +13,9 @@ app = FastAPI()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Configuration pour JWT
-SECRET_KEY = os.getenv("SECRET_KEY", "votre_secret_key_tres_securisee")  # Clé secrète par défaut
+SECRET_KEY = os.getenv("SECRET_KEY")  # Clé secrète par défaut
 ALGORITHM = os.getenv("ALGORITHM", "HS256")  # Algorithme par défaut
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60))  # Convertir en entier
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))  # Convertir en entier
 
 # Modèle Pydantic pour le token
 class Token(BaseModel):
