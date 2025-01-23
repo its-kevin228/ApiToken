@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from multiprocessing import process
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -11,10 +12,7 @@ app = FastAPI()
 # Configuration pour le hachage des mots de passe (si nécessaire)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Configuration pour JWT
-SECRET_KEY = "secretkey"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+
 
 # Modèle Pydantic pour le token
 class Token(BaseModel):
@@ -38,7 +36,7 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     else:
         expire = datetime.utcnow() + timedelta(minutes=15)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, process.env.SECRET_KEY, algorithm=process.env.ALGORITHM)
     return encoded_jwt
 
 # Endpoint pour générer un token
@@ -52,7 +50,7 @@ async def login_for_access_token(user: User):
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = timedelta(minutes=process.env.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
@@ -74,12 +72,30 @@ async def validate_token(token: str = Depends(OAuth2PasswordBearer(tokenUrl="tok
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, process.env.SECRET_KEY, algorithms=[process.env.ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
     return {"username": username, "valid": True}
+
+# Endpoint protégé
+@app.get("/protected")
+async def protected_route(token: str = Depends(OAuth2PasswordBearer(tokenUrl="token"))):
+    try:
+        payload = jwt.decode(token, process.env.SECRET_KEY, algorithms=[process.env.ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token",
+            )
+        return {"username": username, "message": "You are authenticated!"}
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+        )
 
 #
