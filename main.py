@@ -49,24 +49,24 @@ def get_db_cursor():
 
 
 
-# Fonction pour insérer un utilisateur dans la base de données
-def insert_user(username: str, password: str):
-    conn, cursor = get_db_cursor()  # Connexion à la base de données
-    try:
-        hashed_password = pwd_context.hash(password)  # Hachage du mot de passe
-        query = "INSERT INTO users (username, hashed_password) VALUES (%s, %s)"
-        cursor.execute(query, (username, hashed_password))  # Exécution de la requête
-        conn.commit()  # Commit des changements
-        print(f"Utilisateur {username} ajouté avec succès.")
-    except Exception as e:
-        print(f"Erreur lors de l'ajout de l'utilisateur : {e}")
-    finally:
-        cursor.close()
-        conn.close()
+# # Fonction pour insérer un utilisateur dans la base de données
+# def insert_user(username: str, password: str):
+#     conn, cursor = get_db_cursor()  # Connexion à la base de données
+#     try:
+#         hashed_password = pwd_context.hash(password)  # Hachage du mot de passe
+#         query = "INSERT INTO users (username, hashed_password) VALUES (%s, %s)"
+#         cursor.execute(query, (username, hashed_password))  # Exécution de la requête
+#         conn.commit()  # Commit des changements
+#         print(f"Utilisateur {username} ajouté avec succès.")
+#     except Exception as e:
+#         print(f"Erreur lors de l'ajout de l'utilisateur : {e}")
+#     finally:
+#         cursor.close()
+#         conn.close()
 
 
-# Ajout d'un utilisateur de test
-insert_user("testuser", "password123!")
+# # Ajout d'un utilisateur de test
+# insert_user("testuser", "password123!")
 
 # Fonction pour récupérer un utilisateur dans la base de données
 def get_user_from_db(username: str):
