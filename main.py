@@ -35,13 +35,18 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-# Fonction pour obtenir un curseur
+# Fonction pour obtenir un curseur et afficher un message de connexion réussie
 def get_db_cursor():
     try:
+        # Tentative de connexion à la base de données
         conn = mysql.connector.connect(**DB_CONFIG)
+        # Afficher un message si la connexion est réussie
+        print("Connexion à la base de données réussie.")
         return conn, conn.cursor(dictionary=True)
     except mysql.connector.Error as e:
+        # En cas d'échec de la connexion, lever une exception HTTP
         raise HTTPException(status_code=500, detail=f"Erreur de connexion à la base de données : {e}")
+
 
 
 # Fonction pour insérer un utilisateur dans la base de données
