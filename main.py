@@ -1,3 +1,4 @@
+from binascii import Error
 from datetime import datetime, timedelta
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -5,10 +6,41 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
 import os  # Pour accéder aux variables d'environnement
-import mysql.connector;
+import mysql.connector
+from dotenv import load_dotenv # type: ignore
 
 # Configuration de l'application FastAPI
 app = FastAPI()
+#charger les variables d'env depuis le fichier .env
+load_dotenv()
+
+
+
+#connexion a la base de donnees
+config = {
+    "username": "root",
+    "password": "",
+    "host": "localhost",
+    "database": "fastapi",
+}
+
+#etablir la connexion 
+try:
+    cnx = mysql.connector.connect(**config)
+    cursor= cnx.cursor(dictionary=True)
+    print("Connexion a la base de donnees reussie")
+
+except Error as e :
+    print(f"Erreur lors de la connexion a la base de donnees : {e}")
+    raise
+
+
+def get_user_from_db(username:str):
+    #requete sql avec placeholder '%s' pour eviter les injections sql
+    query = "SELECT * FROM users WHERE username = %s"
+    cursor.execute(query, (username,))
+    user = cursor.fetchone()
+    return user
 
 # Configuration pour le hachage des mots de passe
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -46,13 +78,23 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
 # Endpoint pour générer un token
 @app.post("/token", response_model=Token)
 async def login_for_access_token(user: User):
-    # Mot de passe haché pour l'utilisateur "testuser"
-    hashed_password = pwd_context.hash("testpassword")
+   
+    # Récupérer l'utilisateur depuis la base de données
+    db_user = get_user_from_db(user.username)
     
-    if user.username != "testuser" or not verify_password(user.password, hashed_password):
+    # Vérifier si l'utilisateur existe
+    if db_user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="Utilisateur non trouvé",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Vérifier le mot de passe
+    if not verify_password(user.password, db_user["hashed_password"]):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Mot de passe incorrect",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
@@ -69,7 +111,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 async def validate_token(token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
+        detail="Désolé votre token n'est pas valide",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
@@ -92,7 +134,7 @@ async def protected_route(token: str = Depends(oauth2_scheme)):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token",
             )
-        return {"username": username, "message": "You are authenticated!"}
+        return {"username": username, "message": "c'est bon vous etes authentifier!"}
     except JWTError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
